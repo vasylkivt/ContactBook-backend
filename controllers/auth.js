@@ -22,6 +22,7 @@ const register = async (req, res, next) => {
     };
 
     const token = jwt.sign(payload, SECRET_KEY, { expiresIn: '23h' });
+    await User.findByIdAndUpdate(newUser._id, { token });
 
     res.status(201).json({
       user: { name: newUser.name, email: newUser.email },
@@ -48,12 +49,6 @@ const login = async (req, res, next) => {
         status: 401,
       });
     }
-    if (!user.verify) {
-      throw new HttpError({
-        status: 401,
-        message: 'Email not verified',
-      });
-    }
 
     const passwordCompare = await bcrypt.compare(password, user.password);
 
@@ -73,7 +68,10 @@ const login = async (req, res, next) => {
     await User.findByIdAndUpdate(user._id, { token });
     res.json({
       token,
-      user: { email: user.email, subscription: user.subscription },
+      user: {
+        name: user.name,
+        email: user.email,
+      },
     });
   } catch (error) {
     next(error);
@@ -93,8 +91,13 @@ const subscription = async (req, res, next) => {
 };
 
 const current = async (req, res, next) => {
-  const { email, subscription } = req.user;
-  res.json({ email, subscription });
+  const { email, name } = req.user;
+  res.json({
+    user: {
+      name,
+      email,
+    },
+  });
 };
 
 const logout = async (req, res, next) => {
